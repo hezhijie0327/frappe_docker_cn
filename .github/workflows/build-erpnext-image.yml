@@ -4,14 +4,29 @@ on:
   workflow_dispatch:
     inputs:
       frappe_branch:
-        description: Frappe branch used by build arg FRAPPE_BRANCH
+        description: Frappe branch used by build arg FRAPPE_BRANCH (ensure apps.json branch compatibility)
         required: false
         default: version-16
+        type: string
+      frappe_path:
+        description: Frappe repository used by build arg FRAPPE_PATH
+        required: false
+        default: https://github.com/frappe/frappe
         type: string
       image_tag:
         description: Docker tag for custom image
         required: false
         default: "16"
+        type: string
+      no_cache:
+        description: Disable Docker build cache
+        required: false
+        default: true
+        type: boolean
+      platforms:
+        description: Docker build platforms (comma-separated for multi-arch)
+        required: false
+        default: linux/amd64
         type: string
       push:
         description: Push image to GHCR
@@ -49,19 +64,19 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ github.token }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build ERPNext image
         uses: docker/build-push-action@v7
         with:
           context: .
           file: images/layered/Containerfile
-          no-cache: true
+          no-cache: ${{ inputs.no_cache }}
           push: ${{ inputs.push }}
-          load: ${{ inputs.push == false }}
-          platforms: linux/amd64
+          load: ${{ inputs.push != true }}
+          platforms: ${{ inputs.platforms }}
           build-args: |
-            FRAPPE_PATH=https://github.com/frappe/frappe
+            FRAPPE_PATH=${{ inputs.frappe_path }}
             FRAPPE_BRANCH=${{ inputs.frappe_branch }}
           secrets: |
             id=apps_json,src=apps.json
