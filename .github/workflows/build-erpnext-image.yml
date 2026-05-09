@@ -81,5 +81,4 @@ jobs:
           secrets: |
             id=apps_json,src=apps.json
           tags: |
-            ${{ env.LOCAL_IMAGE }}
             ${{ env.GHCR_IMAGE }}
