@@ -1,0 +1,18 @@
+[
+  {
+    "url": "https://github.com/frappe/erpnext",
+    "branch": "version-15"
+  },
+  {
+    "url": "https://github.com/frappe/hrms",
+    "branch": "version-15"
+  },
+  {
+    "url": "https://gitee.com/yuzelin/erpnext_china",
+    "branch": "master"
+  },
+  {
+    "url": "https://gitee.com/yuzelin/frappe_wxwork",
+    "branch": "master"
+  }
+]

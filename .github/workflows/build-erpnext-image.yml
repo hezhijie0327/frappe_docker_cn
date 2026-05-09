@@ -1,0 +1,85 @@
+name: Custom / Build ERPNext Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      frappe_branch:
+        description: Frappe branch used by build arg FRAPPE_BRANCH (ensure apps.json branch compatibility)
+        required: false
+        default: version-16
+        type: string
+      frappe_path:
+        description: Frappe repository used by build arg FRAPPE_PATH
+        required: false
+        default: https://github.com/frappe/frappe
+        type: string
+      image_tag:
+        description: Docker tag for custom image
+        required: false
+        default: "16"
+        type: string
+      no_cache:
+        description: Disable Docker build cache
+        required: false
+        default: true
+        type: boolean
+      platforms:
+        description: Docker build platforms (comma-separated for multi-arch)
+        required: false
+        default: linux/amd64
+        type: string
+      push:
+        description: Push image to GHCR
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      LOCAL_IMAGE: custom:${{ inputs.image_tag }}
+      GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/erpnext-custom:${{ inputs.image_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v4
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GHCR
+        if: ${{ inputs.push }}
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build ERPNext image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: images/layered/Containerfile
+          no-cache: ${{ inputs.no_cache }}
+          push: ${{ inputs.push }}
+          load: ${{ inputs.push != true }}
+          platforms: ${{ inputs.platforms }}
+          build-args: |
+            FRAPPE_PATH=${{ inputs.frappe_path }}
+            FRAPPE_BRANCH=${{ inputs.frappe_branch }}
+          secrets: |
+            id=apps_json,src=apps.json
+          tags: |
+            ${{ env.LOCAL_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
